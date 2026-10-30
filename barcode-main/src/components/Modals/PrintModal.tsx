@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import {
@@ -13,6 +13,7 @@ import {
   SystemPrinterInfo,
 } from '@/types/barcode-agentwarebot';
 import { PRINTER_LIST } from '@/data/defaults';
+import { generateSolidQrSvg } from '@/utils/qr';
 
 interface PrintModalProps {
   settings: WizardSettings;
@@ -186,6 +187,11 @@ const LabelCell: React.FC<LabelCellProps> = ({
 
         if (obj.type === 'text') {
           const tx = obj as TextObject;
+          // Ensure pure dark black (#000000) for high-contrast dark text
+          const fontColor = (!tx.color || tx.color === '#444' || tx.color === '#444444' || tx.color === '#333' || tx.color === '#333333' || tx.color === '#555' || tx.color === '#666')
+            ? '#000000'
+            : tx.color;
+          const isBold = tx.bold || tx.fontSize <= 9;
           return (
             <div
               key={obj.id}
@@ -199,15 +205,16 @@ const LabelCell: React.FC<LabelCellProps> = ({
                 transformOrigin: 'center center',
                 fontSize: Math.max(6, tx.fontSize * (scale / 3.78)),
                 fontFamily: tx.fontFamily,
-                fontWeight: tx.bold ? 'bold' : 'normal',
+                fontWeight: isBold ? 'bold' : 'normal',
                 fontStyle: tx.italic ? 'italic' : 'normal',
                 textDecoration: tx.underline ? 'underline' : tx.strike ? 'line-through' : 'none',
                 textAlign: tx.align,
-                color: tx.color,
+                color: fontColor,
                 overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'center',
                 whiteSpace: 'pre-wrap',
+                WebkitFontSmoothing: 'antialiased',
               }}
             >
               {tx.text}
@@ -289,7 +296,7 @@ const LabelCell: React.FC<LabelCellProps> = ({
   );
 };
 
-// Async Vector QR cell
+// Synchronous Solid Vector QR cell
 const QrCell: React.FC<{
   value: string;
   left: number;
@@ -300,24 +307,8 @@ const QrCell: React.FC<{
   bgColor?: string;
   transform?: string;
 }> = ({ value, left, top, width, height, fgColor = '#000000', bgColor = '#ffffff', transform }) => {
-  const [svgHtml, setSvgHtml] = useState<string>('');
-
-  useEffect(() => {
-    let active = true;
-    QRCode.toString(value, {
-      type: 'svg',
-      margin: 1,
-      color: { dark: fgColor, light: bgColor },
-    })
-      .then((svg) => {
-        if (active) {
-          setSvgHtml(svg.replace('<svg ', '<svg width="100%" height="100%" style="display:block;" '));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
+  const svgHtml = useMemo(() => {
+    return generateSolidQrSvg(value, fgColor, bgColor, 1);
   }, [value, fgColor, bgColor]);
 
   return (
@@ -462,33 +453,6 @@ export const PrintModal: React.FC<PrintModalProps> = ({ settings, objects, onClo
 
     const bgColor = settings.useBackgroundColor ? settings.backgroundColor : '#ffffff';
 
-    // Pre-generate real vector SVGs for all QR codes across all printed labels!
-    const qrSvgMap = new Map<string, string>();
-    for (const obj of objects) {
-      if (obj.type === 'barcode' && (obj as BarcodeObject).format === 'QR') {
-        const bc = obj as BarcodeObject;
-        for (let i = 0; i < printTotalItems; i++) {
-          const displayVal = enableSerial ? String(serialStart + i) : bc.value;
-          const key = `${obj.id}-${i}`;
-          if (!qrSvgMap.has(key)) {
-            try {
-              const rawSvg = await QRCode.toString(displayVal, {
-                type: 'svg',
-                margin: 1,
-                color: {
-                  dark: bc.fgColor || '#000000',
-                  light: bc.bgColor || '#ffffff',
-                },
-              });
-              qrSvgMap.set(key, rawSvg.replace('<svg ', '<svg width="100%" height="100%" style="display:block;" '));
-            } catch {
-              qrSvgMap.set(key, '');
-            }
-          }
-        }
-      }
-    }
-
     // Build SVGs / content for each object in each label
     const buildObjectHtml = (obj: CanvasObject, labelIndex: number): string => {
       const currentSerial = serialStart + labelIndex;
@@ -506,7 +470,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ settings, objects, onClo
         const hPx = obj.height * 3.78 * 2;
 
         if (bc.format === 'QR') {
-          const qrSvg = qrSvgMap.get(`${obj.id}-${labelIndex}`);
+          const qrSvg = generateSolidQrSvg(displayVal, bc.fgColor || '#000000', bc.bgColor || '#ffffff', 1);
           const qrBg = bc.bgColor || '#ffffff';
           if (qrSvg) {
             return `<div style="${posStyle}background:${qrBg};display:flex;align-items:center;justify-content:center;">${qrSvg}</div>`;
@@ -521,7 +485,12 @@ export const PrintModal: React.FC<PrintModalProps> = ({ settings, objects, onClo
       if (obj.type === 'text') {
         const tx = obj as TextObject;
         const td = tx.underline ? 'underline' : tx.strike ? 'line-through' : 'none';
-        return `<div style="${posStyle}font-size:${tx.fontSize}pt;font-family:${tx.fontFamily},sans-serif;font-weight:${tx.bold ? 'bold' : 'normal'};font-style:${tx.italic ? 'italic' : 'normal'};text-decoration:${td};text-align:${tx.align};color:${tx.color};display:flex;align-items:center;white-space:pre-wrap;">${tx.text}</div>`;
+        // Ensure pure dark black (#000000) for high-contrast dark text
+        const fontColor = (!tx.color || tx.color === '#444' || tx.color === '#444444' || tx.color === '#333' || tx.color === '#333333' || tx.color === '#555' || tx.color === '#666')
+          ? '#000000'
+          : tx.color;
+        const isBold = tx.bold || tx.fontSize <= 9;
+        return `<div style="${posStyle}font-size:${tx.fontSize}pt;font-family:${tx.fontFamily},sans-serif;font-weight:${isBold ? 'bold' : 'normal'};font-style:${tx.italic ? 'italic' : 'normal'};text-decoration:${td};text-align:${tx.align};color:${fontColor};display:flex;align-items:center;white-space:pre-wrap;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision;">${tx.text}</div>`;
       }
 
       if (obj.type === 'line') {
@@ -588,7 +557,13 @@ export const PrintModal: React.FC<PrintModalProps> = ({ settings, objects, onClo
 
     styleEl.textContent = `
       @page { size: ${pw}mm ${ph}mm; margin: 0; }
-      #barcode-agentwarebot-print-root *, #bartender-print-root * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      #barcode-agentwarebot-print-root *, #bartender-print-root * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        text-rendering: geometricPrecision !important;
+        -webkit-font-smoothing: antialiased !important;
+      }
     `;
 
     root.innerHTML = allCopiesHtml;

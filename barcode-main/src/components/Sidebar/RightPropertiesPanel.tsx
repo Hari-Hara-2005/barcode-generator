@@ -35,6 +35,7 @@ interface RightPropertiesPanelProps {
   onExportSvg: () => void;
   onOpenPageSetup?: () => void;
   onUpdateSettings?: (newSettings: Partial<WizardSettings>) => void;
+  onMakeAllDark?: () => void;
 }
 
 const BARCODE_FORMAT_OPTIONS: { value: BarcodeFormat; label: string }[] = [
@@ -57,6 +58,7 @@ export const RightPropertiesPanel: React.FC<RightPropertiesPanelProps> = ({
   onExportSvg,
   onOpenPageSetup,
   onUpdateSettings,
+  onMakeAllDark,
 }) => {
   const inputClass =
     'h-9 w-full text-sm border border-slate-200 rounded-lg bg-slate-50/70 px-3 text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition';
@@ -393,9 +395,44 @@ export const RightPropertiesPanel: React.FC<RightPropertiesPanelProps> = ({
                       })
                     }
                   />
-                  <span className="text-xs font-mono font-bold text-slate-700 uppercase">
-                    {(selectedObject as TextObject).color}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateObject({
+                          ...selectedObject,
+                          color: '#000000',
+                          bold: true,
+                        })
+                      }
+                      className="px-2 py-1 text-[11px] font-bold bg-slate-900 text-white rounded hover:bg-black transition cursor-pointer"
+                      title="Set to Pure Black (#000000) & Bold"
+                    >
+                      ⚫ Black
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateObject({
+                          ...selectedObject,
+                          color: '#dc2626',
+                        })
+                      }
+                      className="w-6 h-6 rounded bg-red-600 border border-slate-200 cursor-pointer"
+                      title="Red (#DC2626)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateObject({
+                          ...selectedObject,
+                          color: '#2563eb',
+                        })
+                      }
+                      className="w-6 h-6 rounded bg-blue-600 border border-slate-200 cursor-pointer"
+                      title="Blue (#2563EB)"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -841,6 +878,18 @@ export const RightPropertiesPanel: React.FC<RightPropertiesPanelProps> = ({
             <Settings2 className="w-4 h-4 text-slate-500" />
             <span>Open Page Setup Dialog...</span>
           </button>
+
+          {onMakeAllDark && (
+            <button
+              type="button"
+              className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-black text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 mt-2"
+              onClick={onMakeAllDark}
+              title="Set all text and elements to bold pure dark black (#000000)"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+              <span>Make All Dark (Pure #000000)</span>
+            </button>
+          )}
         </div>
 
         {/* Production & Export Tools */}

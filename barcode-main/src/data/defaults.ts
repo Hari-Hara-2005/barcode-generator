@@ -219,12 +219,12 @@ export const SAMPLE_AAF_OBJECTS: CanvasObject[] = [
     text: 'Batch: #A-2026',
     fontFamily: 'Printer Sans Serif',
     fontSize: 7,
-    bold: false,
+    bold: true,
     italic: false,
     underline: false,
     strike: false,
     align: 'center',
-    color: '#333333',
+    color: '#000000',
   },
 ];
 

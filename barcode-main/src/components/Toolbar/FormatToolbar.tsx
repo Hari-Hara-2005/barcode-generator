@@ -31,6 +31,7 @@ interface FormatToolbarProps {
   setAlign: (a: 'left' | 'center' | 'right' | 'justify') => void;
   lineWidth: number;
   setLineWidth: (w: number) => void;
+  onMakeAllDark?: () => void;
 }
 
 export const FormatToolbar: React.FC<FormatToolbarProps> = ({
@@ -52,6 +53,7 @@ export const FormatToolbar: React.FC<FormatToolbarProps> = ({
   setAlign,
   lineWidth,
   setLineWidth,
+  onMakeAllDark,
 }) => {
   const btnBase =
     'h-8 w-8 flex items-center justify-center rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95';
@@ -164,7 +166,7 @@ export const FormatToolbar: React.FC<FormatToolbarProps> = ({
       {/* Color Picker Swatch */}
       <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs">
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Color</span>
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-1.5 cursor-pointer" title="Custom color picker">
           <span
             className="w-5 h-5 rounded-full border border-slate-300 shadow-xs inline-block"
             style={{ backgroundColor: color }}
@@ -177,7 +179,54 @@ export const FormatToolbar: React.FC<FormatToolbarProps> = ({
           />
           <span className="font-mono text-xs font-semibold text-slate-800 uppercase">{color}</span>
         </label>
+
+        {/* Quick Black / Dark Preset Swatches */}
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+          <button
+            type="button"
+            onClick={() => setColor('#000000')}
+            className={`w-4.5 h-4.5 rounded-full bg-black border cursor-pointer transition ${
+              color.toLowerCase() === '#000000' || color.toLowerCase() === '#000'
+                ? 'ring-2 ring-blue-500 border-white'
+                : 'border-slate-300 hover:scale-110'
+            }`}
+            title="Pure Dark Black (#000000)"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#dc2626')}
+            className={`w-4.5 h-4.5 rounded-full bg-red-600 border cursor-pointer transition ${
+              color.toLowerCase() === '#dc2626'
+                ? 'ring-2 ring-blue-500 border-white'
+                : 'border-slate-300 hover:scale-110'
+            }`}
+            title="Red (#DC2626)"
+          />
+          <button
+            type="button"
+            onClick={() => setColor('#2563eb')}
+            className={`w-4.5 h-4.5 rounded-full bg-blue-600 border cursor-pointer transition ${
+              color.toLowerCase() === '#2563eb'
+                ? 'ring-2 ring-blue-500 border-white'
+                : 'border-slate-300 hover:scale-110'
+            }`}
+            title="Blue (#2563EB)"
+          />
+        </div>
       </div>
+
+      {/* Make All Dark Button */}
+      {onMakeAllDark && (
+        <button
+          type="button"
+          onClick={onMakeAllDark}
+          title="Make all font and elements bold, pure solid black (#000000) for sharp printing"
+          className="px-3 py-1.5 text-xs font-bold bg-slate-900 hover:bg-black text-white rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+          <span>Make All Dark</span>
+        </button>
+      )}
 
       {/* Line Width */}
       <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs ml-auto">

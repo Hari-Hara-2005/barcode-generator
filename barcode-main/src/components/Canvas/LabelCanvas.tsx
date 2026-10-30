@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
+import { generateSolidQrSvg } from '@/utils/qr';
 import {
   WizardSettings,
   CanvasObject,
@@ -47,21 +48,13 @@ interface LabelCanvasProps {
 
 const BarcodeItem: React.FC<{ object: BarcodeObject }> = ({ object }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     setError(false);
     if (!object.value) return;
 
-    if (object.format === 'QR') {
-      const c = canvasRef.current;
-      if (!c) return;
-      QRCode.toCanvas(c, object.value, {
-        margin: 1,
-        color: { dark: object.fgColor || '#000000', light: object.bgColor || '#ffffff' },
-      }).catch(() => setError(true));
-    } else {
+    if (object.format !== 'QR') {
       const s = svgRef.current;
       if (!s) return;
       try {
@@ -89,7 +82,18 @@ const BarcodeItem: React.FC<{ object: BarcodeObject }> = ({ object }) => {
   }
 
   if (object.format === 'QR') {
-    return <canvas ref={canvasRef} className="w-full h-full block" />;
+    const qrSvg = generateSolidQrSvg(
+      object.value,
+      object.fgColor || '#000000',
+      object.bgColor || '#ffffff',
+      1
+    );
+    return (
+      <div
+        className="w-full h-full block overflow-hidden select-none"
+        dangerouslySetInnerHTML={{ __html: qrSvg }}
+      />
+    );
   }
 
   return <svg ref={svgRef} className="w-full h-full block objectSvgBarcode" />;

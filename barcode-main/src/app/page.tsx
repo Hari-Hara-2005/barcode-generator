@@ -263,6 +263,38 @@ export default function BarcodeAgentwarebotApp() {
     }
   }, [selectedObject]);
 
+  // Make all objects in the active document pure dark black and bold
+  const handleMakeAllDark = () => {
+    if (!currentDoc) return;
+    const updated = currentDoc.objects.map((obj) => {
+      if (obj.type === 'text') {
+        return {
+          ...obj,
+          color: '#000000',
+          bold: true,
+        };
+      }
+      if (obj.type === 'barcode') {
+        return {
+          ...obj,
+          fgColor: '#000000',
+          bgColor: '#ffffff',
+        };
+      }
+      if (obj.type === 'line' || obj.type === 'shape') {
+        return {
+          ...obj,
+          strokeColor: '#000000',
+        };
+      }
+      return obj;
+    });
+
+    setColor('#000000');
+    setBold(true);
+    updateCurrentDoc({ objects: updated });
+  };
+
   // Handle Wizard creation
   const handleWizardFinish = (newSettings: WizardSettings) => {
     const finalSettings = { ...newSettings };
@@ -1066,6 +1098,7 @@ export default function BarcodeAgentwarebotApp() {
             handleUpdateObject({ ...selectedObject, strokeWidth: w });
           }
         }}
+        onMakeAllDark={handleMakeAllDark}
       />
 
       {/* ─── Main Workspace: Left Sidebar + Canvas / Form View + Right Panel ── */}
@@ -1136,6 +1169,7 @@ export default function BarcodeAgentwarebotApp() {
           onExportSvg={handleExportSvg}
           onOpenPageSetup={() => setShowPageSetup(true)}
           onUpdateSettings={handleUpdateSettings}
+          onMakeAllDark={handleMakeAllDark}
         />
       </div>
 
